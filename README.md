@@ -2,6 +2,9 @@
 
 OmniAuth Shibboleth strategy is an OmniAuth strategy for authenticating through Shibboleth (SAML). If you do not know OmniAuth, please visit OmniAuth wiki.
 
+This fork is a minor modification of the original plugin changed to work with headers instead of environment variables, which we need in our environment.
+Doing this has some security implications, but in turn allows Apache to function as a proxy while still handling shibboleth.
+
 https://github.com/intridea/omniauth/wiki
 
 The detail of the authentication middleware Shibboleth is introduced in Shibboleth wiki.
