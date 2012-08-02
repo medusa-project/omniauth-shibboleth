@@ -7,12 +7,13 @@ module OmniAuth
       option :fields, [:name, :email]
       option :extra_fields, []
       option :debug, false
+      option :host, ""
 
       def request_phase
         [
             302,
             {
-                'Location' => script_name + callback_path + query_string,
+                'Location' => "/Shibboleth.sso/Login?target=https://#{host}/auth/shibboleth/callback",
                 'Content-Type' => 'text/plain'
             },
             ["You are being redirected to Shibboleth SP/IdP for sign-in."]
