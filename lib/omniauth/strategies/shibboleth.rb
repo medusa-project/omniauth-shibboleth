@@ -7,13 +7,18 @@ module OmniAuth
       option :fields, [:name, :email]
       option :extra_fields, []
       option :debug, false
-      option :host, ""
+      option :host, ''
+
+      def self.login_path
+        raise RuntimeError, "Must configure OmniAuth::Strategies::Shibboleth 'host' option" if options.host == ''
+        "/Shibboleth.sso/Login?target=https://#{options.host}/auth/shibboleth/callback"
+      end
 
       def request_phase
         [
             302,
             {
-                'Location' => "/Shibboleth.sso/Login?target=https://#{host}/auth/shibboleth/callback",
+                'Location' => script_name + callback_path + query_string,
                 'Content-Type' => 'text/plain'
             },
             ["You are being redirected to Shibboleth SP/IdP for sign-in."]
