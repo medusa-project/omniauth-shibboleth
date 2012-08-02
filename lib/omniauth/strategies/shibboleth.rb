@@ -7,11 +7,9 @@ module OmniAuth
       option :fields, [:name, :email]
       option :extra_fields, []
       option :debug, false
-      option :host, ''
 
-      def self.login_path
-        raise RuntimeError, "Must configure OmniAuth::Strategies::Shibboleth 'host' option" if options.host == ''
-        "/Shibboleth.sso/Login?target=https://#{options.host}/auth/shibboleth/callback"
+      def self.login_path(host)
+        "/Shibboleth.sso/Login?target=https://#{host}/auth/shibboleth/callback"
       end
 
       def request_phase
