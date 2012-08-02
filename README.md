@@ -3,7 +3,7 @@
 OmniAuth Shibboleth strategy is an OmniAuth strategy for authenticating through Shibboleth (SAML). If you do not know OmniAuth, please visit OmniAuth wiki.
 
 This fork is a minor modification of the original plugin changed to work with headers instead of environment variables, which we need in our environment.
-Doing this has some security implications, but in turn allows Apache to function as a proxy while still handling shibboleth.
+Doing this has some security implications, but in turn allows Apache to function as a proxy while still handling shibboleth. See the end for differences in use.
 
 https://github.com/intridea/omniauth/wiki
 
@@ -95,6 +95,17 @@ When you deploy a new application, you may want to confirm the assumed attribute
     Rails.application.config.middleware.use OmniAuth::Builder do
       provider :shibboleth, { :debug => true }
     end
+
+## Fork differences
+
+The main difference is that we look for the shibboleth information in headers to facilitate using Apache as a proxy and to
+handle shibboleth while running Rails on Passenger Standalone or whatever else behind it.
+
+To initiate shibboleth login, redirect to your login path (we were having trouble getting the default way of the parent gem to work).
+For convenience there is a class method in OmniAuth::Strategies::Shibboleth that takes a host and produces the following:
+
+    /Shibboleth.sso/Login?target=https://#{host}/auth/shibboleth/callback
+    
 
 ## License (MIT License)
 
