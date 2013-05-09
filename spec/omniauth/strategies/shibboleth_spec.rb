@@ -54,16 +54,20 @@ describe OmniAuth::Strategies::Shibboleth do
         @dummy_id = 'abcdefg'
         @eppn = 'test@example.com'
         @display_name = 'Test User'
-        @email = 'test@example.com'
-        strategy.call!(make_env('/auth/shibboleth/callback', 'Shib-Session-ID' => @dummy_id, 'eppn' => @eppn, 'displayName' => @display_name, 'mail' => @email))
+        strategy.call!(make_env('/auth/shibboleth/callback', 'Shib-Session-ID' => @dummy_id, 'eppn' => @eppn, 'displayName' => @display_name))
         strategy.env['omniauth.auth']['uid'].should == @eppn
         strategy.env['omniauth.auth']['info']['name'].should == @display_name
-        strategy.env['omniauth.auth']['info']['email'].should == @email
       end
     end
 
     context 'with Shibboleth session and attribute options' do
-      let(:options){ { :uid_field => :uid, :fields => [], :extra_fields => [:o, :affiliation] } }
+      let(:options){ {
+        :shib_session_id_field => 'Shib-Session-ID',
+        :shib_application_id_field => 'Shib-Application-ID',
+        :uid_field => :uid,
+        :name_field => :displayName,
+        :info_fields => {},
+        :extra_fields => [:o, :affiliation] } }
       let(:app){ lambda{|env| [404, {}, ['Awesome']]}}
       let(:strategy){ OmniAuth::Strategies::Shibboleth.new(app, options) }
 
@@ -86,8 +90,7 @@ describe OmniAuth::Strategies::Shibboleth do
         @dummy_id = 'abcdefg'
         @eppn = 'test@example.com'
         @display_name = 'Test User'
-        @email = 'test@example.com'
-        env = make_env('/auth/shibboleth/callback', 'Shib-Session-ID' => @dummy_id, 'eppn' => @eppn, 'displayName' => @display_name, 'mail' => @email)
+        env = make_env('/auth/shibboleth/callback', 'Shib-Session-ID' => @dummy_id, 'eppn' => @eppn, 'displayName' => @display_name)
         response = strategy.call!(env)
         response[0].should == 200
       end

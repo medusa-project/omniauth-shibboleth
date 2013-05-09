@@ -38,6 +38,9 @@ To use OmniAuth Shibboleth strategy as a middleware in your rails application, a
     % vi config/initializer/omniauth.rb
     Rails.application.config.middleware.use OmniAuth::Builder do
       provider :shibboleth, {
+        :shib_session_id_field     => "Shib-Session-ID",
+        :shib_application_id_field => "Shib-Application-ID",
+        :debug                     => false,
         :extra_fields => [
           :"unscoped-affiliation",
           :entitlement
@@ -49,19 +52,42 @@ In the above example, 'unscoped-affiliation' and 'entitlement' attributes are ad
 
 https://github.com/intridea/omniauth/wiki/Auth-Hash-Schema
 
-'eppn' attribute is used as uid field. 'displayName' and 'mail' attributes are provided as request.env["omniauth.auth"]["info"]["name"] and request.env["omniauth.auth"]["info"]["email"].
+'eppn' attribute is used as uid field. 'displayName' attribute is provided as request.env["omniauth.auth"]["info"]["name"].
 
-These can be changed by :uid_field and :fields option.
+These can be changed by :uid_field, :name_field option. You can also add any "info" fields defined in Auth-Hash-Schema by using :info_fields option.
 
     % vi config/initializer/omniauth.rb
     Rails.application.config.middleware.use OmniAuth::Builder do
       provider :shibboleth, {
-        :uid_field => :uid,
-        :fields => []
+        :uid_field                 => "uid",
+        :name_field                => "displayName",
+        :info_fields => {
+          :email    => "mail",
+          :location => "contactAddress",
+          :image    => "photo_url",
+          :phone    => "contactPhone"
+        }
       }
     end
 
-In the above example, Shibboleth strategy does not pass any :info fields and use 'uid' attribute as uid fields.
+In the previous example, Shibboleth strategy does not pass any :info fields and use 'uid' attribute as uid fields.
+
+### !!!NOTICE!!! devise integration issue
+
+When you use omniauth with devise, the omniauth configuration is applied before devise configuration and some part of the configuration overwritten by the devise's. It may not work as you assume. So thus, in that case, currently you should write your configuration only in device configuration.
+
+config/initializers/devise.rb:
+```ruby
+config.omniauth :shibboleth, {:uid_field => 'eppn',
+                         :info_fields => {:email => 'mail', :name => 'cn', :last_name => 'sn'},
+                         :extra_fields => [:schacHomeOrganization]
+                  }
+```
+
+The detail is discussed in the following thread.
+
+https://github.com/plataformatec/devise/issues/2128
+
 
 ### How to authenticate users
 
@@ -109,7 +135,7 @@ For convenience there is a class method in OmniAuth::Strategies::Shibboleth that
 
 ## License (MIT License)
 
-Copyright (C) 2011 by Toyokazu Akiyama.
+omniauth-shibboleth is released under the MIT license.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
