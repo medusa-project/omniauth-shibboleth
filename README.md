@@ -105,7 +105,7 @@ To initiate shibboleth login, redirect to your login path (we were having troubl
 For convenience there is a class method in OmniAuth::Strategies::Shibboleth that takes a host and produces the following:
 
     /Shibboleth.sso/Login?target=https://#{host}/auth/shibboleth/callback
-    
+
 
 ## License (MIT License)
 
