@@ -1,5 +1,8 @@
 # OmniAuth Shibboleth strategy
 
+[![Gem Version](http://img.shields.io/gem/v/omniauth-shibboleth.svg)](http://rubygems.org/gems/omniauth-shibboleth)
+[![Build Status](https://travis-ci.org/toyokazu/omniauth-shibboleth.svg?branch=master)](https://travis-ci.org/toyokazu/omniauth-shibboleth)
+
 OmniAuth Shibboleth strategy is an OmniAuth strategy for authenticating through Shibboleth (SAML). If you do not know OmniAuth, please visit OmniAuth wiki.
 
 This fork is a minor modification of the original plugin changed to work with headers instead of environment variables, which we need in our environment.
@@ -21,15 +24,12 @@ https://github.com/toyokazu/omniauth-shibboleth/issues
 
 ## Getting Started
 
-### Installation
-
-    % gem install omniauth-shibboleth
-
-### Setup Gemfile
+### Setup Gemfile and Install
 
     % cd rails-app
     % vi Gemfile
     gem 'omniauth-shibboleth'
+    % bundle install
 
 ### Setup Shibboleth Strategy
 
@@ -72,6 +72,25 @@ These can be changed by :uid_field, :name_field option. You can also add any "in
 
 In the previous example, Shibboleth strategy does not pass any :info fields and use 'uid' attribute as uid fields.
 
+### More flexible attribute configuration
+
+If you need more flexible attribute definition, you can use lambda (Proc) to define your attributes. In the following example, 'uid' attribute is chosen from 'eppn' or 'mail', 'info'/'name' attribute is defined as a concatenation of 'cn' and 'sn' and 'info'/'affiliation' attribute is defined as 'affiliation'@my.localdomain. 'request_param' parameter is a method defined in OmniAuth::Shibboleth::Strategy. You can specify attribute names by downcase strings in either request_type, :env, :header and :params.
+
+    % vi config/initializer/omniauth.rb
+    Rails.application.config.middleware.use OmniAuth::Builder do
+      provider :shibboleth, {
+        :uid_field                 => lambda {|request_param| request_param.call('eppn') || request_param.call('mail')},
+        :name_field                => lambda {|request_param| "#{request_param.call('cn')} #{request_param.call('sn')}"},
+        :info_fields => {
+          :affiliation => lambda {|request_param| "#{request_param.call('affiliation')}@my.localdomain"},
+          :email    => "mail",
+          :location => "contactAddress",
+          :image    => "photo_url",
+          :phone    => "contactPhone"
+        }
+      }
+    end
+
 ### !!!NOTICE!!! devise integration issue
 
 When you use omniauth with devise, the omniauth configuration is applied before devise configuration and some part of the configuration overwritten by the devise's. It may not work as you assume. So thus, in that case, currently you should write your configuration only in device configuration.
@@ -111,7 +130,31 @@ Shibboleth strategy assumes the attributes are provided via environment variable
 
 https://wiki.shibboleth.net/confluence/display/SHIB2/NativeSPSpoofChecking
 
-To provide Shibboleth attributes via environment variables, we can not use proxy_balancer base approach. Currently we can realize it by using Phusion Passenger as an application container. An example construction pattern is shown in presence_checker application (https://github.com/toyokazu/presence_checker/).
+To provide Shibboleth attributes via environment variables, we can not use proxy based approach, e.g. mod_proxy_balancer. Currently we can realize it by using Phusion Passenger as an application container. An example construction pattern is shown in presence_checker application (https://github.com/toyokazu/presence_checker/).
+
+### :request_type option
+
+You understand the issues using ShibUseHeaders, but and yet if you want to use the proxy based approach, you can use :request_type option. This option enables us to specify what kind of parameters are used to create 'omniauth.auth' (auth hash). This option can also be used to develop your Rails application without local IdP and SP by using :params option. The option values are:
+
+- **:env** (default) The environment variables are used to create auth hash.
+- **:header** The auth hash is created from header vaiables. In the Rack middleware, since header variables are treated as environment variables like HTTP_*, the specified variables are converted as the same as header variables, HTTP_*. This :request_type is basically used for mod_proxy_balancer approach.
+- **:params** The query string or POST parameters are used to create auth hash. This :request_type is basically used for development phase. You can emulate SP function by providing parameters as query string. In this case, please do not forget to add Shib-Session-ID or Shib-Application-ID value which is used to check the session is created at SP.
+
+The following is an example configuration.
+
+    % vi config/initializer/omniauth.rb
+    Rails.application.config.middleware.use OmniAuth::Builder do
+      provider :shibboleth, { :request_type => :header }
+    end
+
+If you use proxy based approach, please be sure to add ShibUseHeaders option in mod_shib configuration.
+
+    <Location /secure>
+      AuthType shibboleth
+      ShibRequestSetting requireSession 1
+      ShibUseHeaders On
+      require valid-user
+    </Location>
 
 ### debug mode
 
